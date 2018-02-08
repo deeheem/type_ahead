@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Type Ahead 👀</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <form class="search-form">
+    <input type="text" class="search" placeholder="City or State">
+    <ul class="suggestions">
+      <li>Filter for a city</li>
+      <li>or a state</li>
+    </ul>
+  </form>
+<script>
+const endpoint = 'https://gist.githubusercontent.com/Miserlou/c5cd8364bf9b2420bb29/raw/2bf258763cdddd704f8ffd3ea9a3e81d25e2c6f6/cities.json';
+
+const cities = [];
+/*
+const prom = fetch(endpoint);
+console.log(prom);   ==> we see that it doesn't return the data, but returns a promise 
+*/
+//working with a promise: .then()  ==> returns a blob of data
+/*fetch(endpoint).then(blob => console.log(blob))  ==> returns body, headers, ok, status etc: this data is not recognizable, and it also cannot be parsed. so we need to convert blob to json.= by blob.json() ==> returns another promise. now if we console.log(data), we get a massive array of all 1000 citites
+*/
+//getting data into cities:- if we do cities.push(data) then data gets pushed linearly in cities[] (1x1000:2d array)but by spreading (...) gives us proper cities (1000: 1D array)
+fetch(endpoint)
+  .then(blob => blob.json())
+  .then(data => cities.push(...data));
+
+//function to filter out cities when someone types in the box
+function findMatches(wordToMatch, cities) {
+  return cities.filter(place => {
+    // here we need to figure out if the city or state matches what was searched
+    const regex = new RegExp(wordToMatch, 'gi');  // putting a variable into a regular expression. Flags: 'g':global, 'i': insensitive
+    return place.city.match(regex) || place.state.match(regex)
+  });
+}
+
+function numberWithCommas(x) {
+  return x.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',');  // function to put in commas in numbers that represent population
+}
+
+//called whenever someone changes the valu typed
+function displayMatches() {
+  const matchArray = findMatches(this.value, cities);  // get all data first
+  const html = matchArray.map(place => {   // loop over
+    const regex = new RegExp(this.value, 'gi');  // find the part matches and highlight it using .hl class  
+    const cityName = place.city.replace(regex, `<span class="hl">${this.value}</span>`);  // replace the regex with a span of the class highlight
+    const stateName = place.state.replace(regex, `<span class="hl">${this.value}</span>`);
+    return `
+      <li>   
+        <span class="name">${cityName}, ${stateName}</span>
+        <span class="population">${numberWithCommas(place.population)}</span>
+      </li>
+    `;  // list item
+  }).join(''); // join() since ma() returns an array but we want a string
+  suggestions.innerHTML = html;  
+}
+
+const searchInput = document.querySelector('.search');
+const suggestions = document.querySelector('.suggestions');
+
+searchInput.addEventListener('change', displayMatches); // change event only fires up whenever you go off that input, not whenever you type into and key up
+searchInput.addEventListener('keyup', displayMatches);  // whenever you want the result to get updated when you type the new input anf fire up
+
+</script>
+  </body>
+</html>
